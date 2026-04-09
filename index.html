@@ -980,7 +980,8 @@ Respond with ONLY a valid JSON array of 3 strings. No markdown, no explanation.`
 
         if (!res.ok) throw new Error(`API ${res.status}`);
         const data = await res.json();
-        const raw  = data.content?.[0]?.text?.trim() || '[]';
+        const raw  = (data.content?.[0]?.text?.trim() || '[]')
+            .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
         let suggestions;
         try { suggestions = JSON.parse(raw); }
