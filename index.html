@@ -118,6 +118,10 @@
             flex: 1; display: flex; align-items: center; justify-content: center;
             padding: 24px 36px 36px; overflow: hidden; position: relative;
         }
+        .content-area.is-done {
+            overflow-y: auto; align-items: flex-start; justify-content: center;
+        }
+        .content-area.is-done .completion { position: relative; padding: 24px 16px 48px; }
 
         /* ── Question panel ── */
         .question-panel {
@@ -1136,6 +1140,7 @@ function showDone() {
         ${summaryRows ? `<div class="summary-grid">${summaryRows}</div>` : ''}
     `;
     stage.appendChild(done);
+    stage.classList.add('is-done');
 
     submitToSupabase();
     setTimeout(() => launchConfetti(), 400);
