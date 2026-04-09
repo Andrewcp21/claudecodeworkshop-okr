@@ -683,8 +683,14 @@ const questions = [
     {
         id: 'interests',
         tag: 'Question 02',
-        title: "What are you hoping to learn today?",
-        sub: 'Pick everything that excites you, {name} — no wrong answers.',
+        title: "What do you want to walk away with today, {name}?",
+        sub: 'Pick everything that excites you — no wrong answers.',
+        teamSubs: {
+            'ESP Team':        "Think about your B2B clients — what would help you deliver sharper corporate training?",
+            'Enrollment Team': "Think about your leads and students — what would make your follow-ups faster and smarter?",
+            'POFs/Finance Team': "Think about your financial workflows — what takes the most manual effort right now?",
+            'LEEN Team':       "Think about your learners — what would help you build better programs at scale?"
+        },
         type: 'checkbox',
         options: [
             'Automating repetitive tasks',
@@ -700,8 +706,14 @@ const questions = [
     {
         id: 'demo',
         tag: 'Question 03',
-        title: "Got it! Which demo would be most useful for you?",
+        title: "Which demo would hit closest to home for {team}?",
         sub: 'Select all that feel relevant to your day-to-day work.',
+        teamSubs: {
+            'ESP Team':        "Pick what could become part of your client-facing training toolkit.",
+            'Enrollment Team': "Pick demos closest to your admissions and lead management work.",
+            'POFs/Finance Team': "Focus on what could cut down your manual processing time the most.",
+            'LEEN Team':       "Think about what could help you scale or improve your learning programs."
+        },
         type: 'checkbox',
         options: [
             'Email automation workflow',
@@ -717,7 +729,7 @@ const questions = [
     {
         id: 'familiarity',
         tag: 'Question 04',
-        title: 'Quick check — how familiar are you with Claude Code?',
+        title: 'Honest question, {name} — how familiar are you with Claude Code?',
         type: 'scale',
         autoAdvance: true,
         options: ['No experience','Beginner','Intermediate','Advanced','Very experienced']
@@ -725,18 +737,19 @@ const questions = [
     {
         id: 'usecase',
         tag: 'Question 05',
-        title: "Last one — any specific challenge you'd like to tackle?",
-        sub: "Optional. The more context you share, {name}, the better we can tailor the session.",
+        title: "Last one — any specific challenge on {team} you'd love to crack?",
+        sub: "Optional, but the more you share — the sharper we can make the session for you.",
         type: 'text',
         optional: true
     }
 ];
 
-/* Replaces {name} with first name, falling back to 'you' */
+/* Replaces {name} and {team} tokens */
 function personalize(text) {
     if (!text) return text;
     const firstName = (answers.name || '').trim().split(/\s+/)[0] || 'you';
-    return text.replace(/\{name\}/g, firstName);
+    const team = answers.team || 'your team';
+    return text.replace(/\{name\}/g, firstName).replace(/\{team\}/g, team);
 }
 
 let cur = 0;
@@ -859,7 +872,7 @@ function buildPanel(i) {
         <div class="q-watermark${q.tag === 'Welcome' ? ' is-emoji' : ''}" aria-hidden="true">${wNum}</div>
         <div class="q-tag">${q.tag}</div>
         <div class="q-title">${escHtml(personalize(q.title))}</div>
-        ${q.sub ? `<div class="q-sub">${escHtml(personalize(q.sub))}</div>` : ''}
+        ${(q.teamSubs?.[answers.team] || q.sub) ? `<div class="q-sub">${escHtml(personalize(q.teamSubs?.[answers.team] || q.sub))}</div>` : ''}
         ${bodyHTML}
         ${navHTML}
     `;
