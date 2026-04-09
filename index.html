@@ -27,6 +27,7 @@
         }
 
         html, body { height: 100%; overflow: hidden; }
+        @media (max-width: 640px) { html, body { overflow: auto; } }
         body { background: var(--bg); color: var(--text); font-family: 'Red Hat Display', sans-serif; }
 
         /* ── Background ── */
@@ -155,6 +156,13 @@
             pointer-events: none;
             user-select: none;
             transition: opacity 0.4s;
+            overflow: hidden;
+        }
+        /* Welcome screen: emoji watermark gets slightly different treatment */
+        .q-watermark.is-emoji {
+            opacity: 0.07;
+            font-size: clamp(90px, 14vw, 150px);
+            top: -10px;
         }
 
         .q-tag {
@@ -295,6 +303,31 @@
             color: var(--text-dim); line-height: 1.3; letter-spacing: 0.01em;
         }
 
+        /* ── Name input (hero style) ── */
+        .name-wrap {
+            display: flex; flex-direction: column; gap: 0;
+        }
+        .name-input {
+            background: transparent;
+            border: none; border-bottom: 2px solid rgba(255,255,255,0.15);
+            padding: 12px 0;
+            color: var(--text);
+            font-family: 'Red Hat Display', sans-serif;
+            font-size: clamp(28px, 4vw, 42px);
+            font-weight: 700;
+            width: 100%; outline: none;
+            transition: border-color 0.2s;
+            letter-spacing: -0.02em;
+            caret-color: var(--accent);
+        }
+        .name-input::placeholder { color: var(--text-faint); font-weight: 500; }
+        .name-input:focus { border-bottom-color: var(--accent); }
+        .name-hint {
+            margin-top: 10px;
+            font-size: 12px; font-weight: 600; color: var(--text-faint);
+            letter-spacing: 0.04em;
+        }
+
         /* ── Textarea ── */
         .text-input {
             background: var(--card); border: 1px solid var(--border);
@@ -311,6 +344,71 @@
             box-shadow: 0 0 0 3px rgba(254,222,62,0.05);
             background: rgba(255,255,255,0.05);
         }
+
+        /* ── Inspiration button ── */
+        .inspo-btn {
+            align-self: flex-start;
+            background: rgba(254,222,62,0.08);
+            border: 1px solid rgba(254,222,62,0.22);
+            border-radius: 100px;
+            color: var(--accent);
+            font-family: 'Red Hat Display', sans-serif;
+            font-size: 12px; font-weight: 700;
+            cursor: pointer;
+            padding: 8px 16px;
+            display: flex; align-items: center; gap: 7px;
+            transition: background 0.18s, border-color 0.18s, transform 0.18s;
+            letter-spacing: 0.02em;
+        }
+        .inspo-btn:hover {
+            background: rgba(254,222,62,0.14);
+            border-color: rgba(254,222,62,0.4);
+            transform: translateY(-1px);
+        }
+        .inspo-btn:disabled {
+            opacity: 0.5; cursor: not-allowed; transform: none;
+        }
+        .inspo-btn .spinner {
+            width: 12px; height: 12px;
+            border: 2px solid rgba(254,222,62,0.3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Suggestion chips ── */
+        .inspo-chips {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-top: 4px;
+        }
+        .inspo-chip {
+            background: rgba(254,222,62,0.05);
+            border: 1px solid rgba(254,222,62,0.18);
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex; align-items: flex-start; gap: 12px;
+            font-size: 13px; font-weight: 500; color: var(--text-dim);
+            line-height: 1.5;
+            transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.18s;
+            text-align: left;
+            animation: fadeUp 0.35s ease both;
+        }
+        .inspo-chip:nth-child(1) { animation-delay: 0.04s; }
+        .inspo-chip:nth-child(2) { animation-delay: 0.10s; }
+        .inspo-chip:nth-child(3) { animation-delay: 0.16s; }
+        .inspo-chip:hover {
+            background: rgba(254,222,62,0.1);
+            border-color: rgba(254,222,62,0.35);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+        .inspo-chip .chip-icon {
+            flex-shrink: 0; margin-top: 1px;
+            font-size: 14px; line-height: 1;
+        }
+        .inspo-chip .chip-text { flex: 1; }
 
         /* ── Nav ── */
         .q-nav { display: flex; align-items: center; justify-content: space-between; }
@@ -403,6 +501,49 @@
         }
         .sum-value { font-size: 13.5px; font-weight: 500; color: var(--text); line-height: 1.45; }
 
+        /* ── AI Workshop Brief ── */
+        .brief-card {
+            width: 100%;
+            background: rgba(254,222,62,0.06);
+            border: 1px solid rgba(254,222,62,0.22);
+            border-radius: 14px;
+            padding: 20px 22px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: fadeUp 0.5s ease both 0.2s;
+        }
+        .brief-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 10px; font-weight: 800;
+            color: var(--accent); letter-spacing: 0.13em; text-transform: uppercase;
+        }
+        .brief-label .pulse-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.4; transform: scale(0.7); }
+        }
+        .brief-text {
+            font-size: 14px; font-weight: 500;
+            color: var(--text); line-height: 1.7;
+        }
+        .brief-loading {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; font-weight: 600; color: var(--text-dim);
+        }
+        .brief-loading .spinner {
+            width: 14px; height: 14px; flex-shrink: 0;
+            border: 2px solid rgba(254,222,62,0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
         /* ── Confetti canvas ── */
         #confetti-canvas {
             position: fixed; inset: 0; z-index: 100;
@@ -411,16 +552,62 @@
 
         /* ── Responsive ── */
         @media (max-width: 640px) {
-            .top-bar, .progress-wrap, .content-area { padding-left: 20px; padding-right: 20px; }
+            /* Use dynamic viewport height to avoid mobile browser chrome overlap */
+            .app { height: 100dvh; }
+
+            .top-bar { padding: 14px 20px; }
+            .progress-wrap { padding: 0 20px 4px; }
+
+            /* Allow vertical scroll within content area while clipping horizontal (for transitions) */
+            .content-area {
+                padding: 16px 20px 80px;
+                overflow-x: hidden;
+                overflow-y: auto;
+                align-items: flex-start;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Question panel: relative flow on mobile so it doesn't clip */
+            .question-panel {
+                position: relative;
+                max-width: 100%;
+            }
+            /* Re-anchor absolute transitions to still work */
+            .question-panel.exit-left,
+            .question-panel.exit-right,
+            .question-panel.enter-right,
+            .question-panel.enter-left {
+                position: absolute;
+                top: 0; left: 20px; right: 20px; width: auto;
+            }
+
             .options-grid.two-col { grid-template-columns: 1fr; }
-            .scale-grid { grid-template-columns: repeat(3, 1fr); }
+
+            /* 5-column scale fits better than 3+2 split */
+            .scale-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+            .scale-card { padding: 12px 4px; }
+            .scale-num { font-size: 18px; }
+            .scale-lbl { font-size: 9px; }
+
+            /* Completion screen: relative flow so it scrolls */
+            .completion { position: relative; padding: 16px 0 40px; }
+
+            /* Touch feedback */
+            .option-card:active { transform: scale(0.98); background: var(--card-hover); }
+            .scale-card:active  { transform: scale(0.97); background: var(--card-hover); }
+            .btn-next:active    { transform: scale(0.97) !important; box-shadow: none !important; }
+
+            /* Adequate touch target height */
+            .option-card { min-height: 52px; }
+            .btn-next { padding: 15px 28px; }
+
             .opt-key { display: none; }
             .kbd-hint { display: none; }
-            .q-watermark { font-size: 100px; }
+            .q-watermark { font-size: clamp(70px, 28vw, 110px); opacity: 0.025; }
         }
         @media (max-height: 600px) {
-            .top-bar { padding-top: 14px; padding-bottom: 14px; }
-            .content-area { padding-top: 12px; }
+            .top-bar { padding-top: 12px; padding-bottom: 12px; }
+            .content-area { padding-top: 10px; }
         }
     </style>
 </head>
@@ -435,7 +622,7 @@
             <span class="logo-text">Claude Code Workshop</span>
         </div>
         <div class="question-counter" id="counter">
-            <span class="current" id="cur-num">01</span> / 05
+            <span class="current" id="cur-num">01</span> / 06
         </div>
     </div>
 
@@ -462,6 +649,7 @@ const _supa = supabase.createClient(
 
 async function submitToSupabase() {
     const payload = {
+        name:        answers.name        || null,
         team:        answers.team        || null,
         interests:   answers.interests   || null,
         demo:        answers.demo        || null,
@@ -474,9 +662,16 @@ async function submitToSupabase() {
 
 const questions = [
     {
+        id: 'name',
+        tag: 'Welcome',
+        title: "First things first — what's your name?",
+        sub: "We'll use it to make this feel a little more personal.",
+        type: 'name'
+    },
+    {
         id: 'team',
         tag: 'Question 01',
-        title: 'Which team are you from?',
+        title: 'Nice to meet you, {name}! Which team are you on?',
         type: 'radio',
         autoAdvance: true,
         options: ['Enrollment Team','ESP Team','POFs/Finance Team','LEEN Team']
@@ -484,8 +679,8 @@ const questions = [
     {
         id: 'interests',
         tag: 'Question 02',
-        title: "What are you most interested in learning?",
-        sub: 'Pick everything that excites you — no wrong answers.',
+        title: "What are you hoping to learn today?",
+        sub: 'Pick everything that excites you, {name} — no wrong answers.',
         type: 'checkbox',
         options: [
             'Automating repetitive tasks',
@@ -501,7 +696,7 @@ const questions = [
     {
         id: 'demo',
         tag: 'Question 03',
-        title: 'Which demo project would help you the most?',
+        title: "Got it! Which demo would be most useful for you?",
         sub: 'Select all that feel relevant to your day-to-day work.',
         type: 'checkbox',
         options: [
@@ -518,7 +713,7 @@ const questions = [
     {
         id: 'familiarity',
         tag: 'Question 04',
-        title: 'How familiar are you with Claude Code right now?',
+        title: 'Quick check — how familiar are you with Claude Code?',
         type: 'scale',
         autoAdvance: true,
         options: ['No experience','Beginner','Intermediate','Advanced','Very experienced']
@@ -526,12 +721,19 @@ const questions = [
     {
         id: 'usecase',
         tag: 'Question 05',
-        title: "Any specific challenge you'd like to tackle?",
-        sub: "Optional, but the more context you share, the better we can tailor the session.",
+        title: "Last one — any specific challenge you'd like to tackle?",
+        sub: "Optional. The more context you share, {name}, the better we can tailor the session.",
         type: 'text',
         optional: true
     }
 ];
+
+/* Replaces {name} with first name, falling back to 'you' */
+function personalize(text) {
+    if (!text) return text;
+    const firstName = (answers.name || '').trim().split(/\s+/)[0] || 'you';
+    return text.replace(/\{name\}/g, firstName);
+}
 
 let cur = 0;
 let kbdHintHidden = false;
@@ -570,7 +772,17 @@ function buildPanel(i) {
 
     let bodyHTML = '';
 
-    if (q.type === 'radio' || q.type === 'checkbox') {
+    if (q.type === 'name') {
+        bodyHTML = `<div class="q-body name-wrap">
+            <input type="text" class="name-input" id="name-input"
+                placeholder="Type your name…"
+                value="${escHtml(answers[q.id] || '')}"
+                oninput="answers['${q.id}']=this.value"
+                onkeydown="if(event.key==='Enter'&&this.value.trim())goNext();"
+                autocomplete="given-name" spellcheck="false">
+            <div class="name-hint">Press Enter or tap Continue ↵</div>
+        </div>`;
+    } else if (q.type === 'radio' || q.type === 'checkbox') {
         const twoCol = q.options.length >= 6;
         const icon = q.type === 'radio'
             ? '<circle cx="5" cy="5" r="2.8" fill="#000"/>'
@@ -602,14 +814,21 @@ function buildPanel(i) {
             }).join('')}
         </div>`;
     } else {
-        bodyHTML = `<div class="q-body">
+        const showInspo = q.id === 'usecase';
+        bodyHTML = `<div class="q-body" style="display:flex;flex-direction:column;gap:10px">
             <textarea class="text-input" id="ta-${i}"
                 placeholder="Share any specific workflows or tasks you'd like to automate or improve…"
                 oninput="answers['${q.id}']=this.value">${answers[q.id] || ''}</textarea>
+            ${showInspo ? `
+            <button class="inspo-btn" id="inspo-btn" onclick="getInspiration()">
+                <span>✦</span> Need inspiration?
+            </button>
+            <div class="inspo-chips" id="inspo-chips"></div>
+            ` : ''}
         </div>`;
     }
 
-    const needsNext = q.type === 'checkbox' || q.type === 'text';
+    const needsNext = q.type === 'checkbox' || q.type === 'text' || q.type === 'name';
     const isLast    = i === questions.length - 1;
     const navHTML   = needsNext
         ? `<div class="q-nav">
@@ -617,7 +836,7 @@ function buildPanel(i) {
             <div style="display:flex;align-items:center;gap:14px">
                 ${q.optional ? '<span class="hint-text">optional</span>' : ''}
                 <button class="btn-next" onclick="goNext()">
-                    ${isLast ? 'Submit Survey' : 'Continue'}
+                    ${isLast ? 'Submit' : 'Continue'}
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                         <path d="M3 7h8M8 4l3 3-3 3" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -629,14 +848,14 @@ function buildPanel(i) {
             <span class="hint-text">tap a card to select</span>
            </div>`;
 
-    // Build watermark number from tag e.g. "Question 01" → "01"
-    const wNum = q.tag.split(' ')[1] || String(i+1).padStart(2,'0');
+    // Build watermark: "Welcome" → "Hi", numbered questions → their number
+    const wNum = q.tag === 'Welcome' ? '👋' : (q.tag.split(' ')[1] || String(i+1).padStart(2,'0'));
 
     panel.innerHTML = `
-        <div class="q-watermark" aria-hidden="true">${wNum}</div>
+        <div class="q-watermark${q.tag === 'Welcome' ? ' is-emoji' : ''}" aria-hidden="true">${wNum}</div>
         <div class="q-tag">${q.tag}</div>
-        <div class="q-title">${escHtml(q.title)}</div>
-        ${q.sub ? `<div class="q-sub">${escHtml(q.sub)}</div>` : ''}
+        <div class="q-title">${escHtml(personalize(q.title))}</div>
+        ${q.sub ? `<div class="q-sub">${escHtml(personalize(q.sub))}</div>` : ''}
         ${bodyHTML}
         ${navHTML}
     `;
@@ -675,6 +894,9 @@ function go(newIdx, dir) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
         panel.classList.remove('enter-right', 'enter-left');
         panel.classList.add('active');
+        // Auto-focus name input after transition
+        const ni = panel.querySelector('.name-input');
+        if (ni) setTimeout(() => ni.focus(), 320);
     }));
 }
 
@@ -718,7 +940,101 @@ function pickScale(e, qIdx, val) {
     setTimeout(() => goNext(), 370);
 }
 
+/* ── ✦ AI inspiration (Claude API) ── */
+const CLAUDE_KEY = '__CLAUDE_KEY__';
+
+async function getInspiration() {
+    const btn   = document.getElementById('inspo-btn');
+    const chips = document.getElementById('inspo-chips');
+    if (!btn || !chips) return;
+
+    // Loading state
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Thinking…';
+    chips.innerHTML = '';
+
+    const team      = answers.team      || 'a team';
+    const interests = Array.isArray(answers.interests) ? answers.interests.join(', ') : (answers.interests || '');
+    const demo      = Array.isArray(answers.demo)      ? answers.demo.join(', ')      : (answers.demo      || '');
+
+    const prompt = `You are helping ${answers.name || 'someone'}, who works on the ${team} at RevoU (an Indonesian online tech education company), fill in a pre-workshop survey for an internal Claude Code AI workshop.
+
+Their context:
+- Team: ${team}
+- Learning interests: ${interests || 'not specified'}
+- Demo preferences: ${demo || 'not specified'}
+
+Suggest exactly 3 specific, practical work challenges they could tackle with Claude Code / AI automation — tailored to their actual team and interests. Be concrete: name the real task, not a generic category. Keep each suggestion to 1 short sentence.
+
+Respond with ONLY a valid JSON array of 3 strings. No markdown, no explanation.`;
+
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'x-api-key': CLAUDE_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-haiku-4-5-20251001',
+                max_tokens: 256,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const data = await res.json();
+        const raw  = data.content?.[0]?.text?.trim() || '[]';
+
+        let suggestions;
+        try { suggestions = JSON.parse(raw); }
+        catch { suggestions = []; }
+
+        if (!Array.isArray(suggestions) || suggestions.length === 0) throw new Error('empty');
+
+        // Render chips
+        chips.innerHTML = suggestions.map(s => `
+            <button class="inspo-chip" onclick="applyInspo(this)">
+                <span class="chip-icon">✦</span>
+                <span class="chip-text">${escHtml(s)}</span>
+            </button>
+        `).join('');
+
+    } catch (err) {
+        chips.innerHTML = `<div style="font-size:12px;color:var(--text-faint);padding:4px 0">
+            Couldn't load suggestions — just type yours directly!
+        </div>`;
+    }
+
+    // Reset button
+    btn.disabled = false;
+    btn.innerHTML = '<span>✦</span> Try again';
+}
+
+function applyInspo(chipEl) {
+    const text = chipEl.querySelector('.chip-text').textContent;
+    const ta = document.querySelector('.text-input');
+    if (!ta) return;
+    ta.value = text;
+    answers.usecase = text;
+    ta.focus();
+    // Highlight the used chip
+    document.querySelectorAll('.inspo-chip').forEach(c => c.style.opacity = '0.4');
+    chipEl.style.opacity = '1';
+    chipEl.style.borderColor = 'var(--accent)';
+    chipEl.style.color = 'var(--text)';
+}
+
 function goNext() {
+    const q = questions[cur];
+    // Block advancing from name question if empty
+    if (q && q.type === 'name' && !answers.name?.trim()) {
+        const ni = document.getElementById('name-input');
+        if (ni) { ni.focus(); ni.style.borderBottomColor = 'var(--accent)'; }
+        return;
+    }
     if (cur < questions.length - 1) {
         go(cur + 1, 'fwd');
     } else {
@@ -733,6 +1049,7 @@ function goBack() {
 /* ── Keyboard shortcuts ── */
 document.addEventListener('keydown', e => {
     if (e.target.tagName === 'TEXTAREA') return;
+    if (e.target.classList.contains('name-input')) return;
 
     const q = questions[cur];
     if (!q) return;
@@ -766,19 +1083,18 @@ function showDone() {
         setTimeout(() => old.remove(), 520);
     }
 
-    // Mark all dots done
     dotWrap.querySelectorAll('.dot-step').forEach(d => {
         d.classList.add('done'); d.classList.remove('active');
     });
     counter.innerHTML = '<span style="color:var(--accent)">Done</span> ✓';
     kbdHint.classList.add('hidden');
 
+    const firstName = (answers.name || '').trim().split(/\s+/)[0] || '';
+
     const labelMap = {
-        team: 'Your team',
-        interests: 'Interested in',
-        demo: 'Demo preference',
-        familiarity: 'Familiarity level',
-        usecase: 'Use case / challenge'
+        name: 'Name', team: 'Team',
+        interests: 'Interested in', demo: 'Demo preference',
+        familiarity: 'Familiarity level', usecase: 'Use case / challenge'
     };
 
     const summaryRows = questions
@@ -800,20 +1116,82 @@ function showDone() {
             </svg>
         </div>
         <div>
-            <div class="done-title">You're all set.</div>
+            <div class="done-title">You're all set${firstName ? ', ' + firstName : ''}!</div>
         </div>
-        <div class="done-sub">
-            Thanks for sharing — we'll use your answers to make the workshop as relevant as possible for your team.
+        <div class="brief-card" id="brief-card">
+            <div class="brief-label">
+                <div class="pulse-dot"></div>
+                Your Workshop Brief
+            </div>
+            <div class="brief-loading" id="brief-content">
+                <div class="spinner"></div>
+                Personalizing your session…
+            </div>
         </div>
         ${summaryRows ? `<div class="summary-grid">${summaryRows}</div>` : ''}
     `;
     stage.appendChild(done);
 
-    // Submit to Supabase
     submitToSupabase();
-
-    // 🎉 Confetti burst
     setTimeout(() => launchConfetti(), 400);
+    generateBrief();
+}
+
+async function generateBrief() {
+    const el = document.getElementById('brief-content');
+    if (!el) return;
+
+    const team        = answers.team        || 'a team';
+    const interests   = Array.isArray(answers.interests) ? answers.interests.join(', ') : (answers.interests || 'various topics');
+    const demo        = Array.isArray(answers.demo)      ? answers.demo.join(', ')      : (answers.demo      || '');
+    const familiarity = answers.familiarity || 'some experience';
+    const usecase     = answers.usecase     || '';
+
+    const prompt = `You are writing a short, warm, personalized "workshop brief" for ${answers.name || 'a participant'} who just filled out a pre-workshop survey for an internal Claude Code AI workshop at RevoU (Indonesian online tech education company).
+
+Their answers:
+- Team: ${team}
+- Learning interests: ${interests}
+- Demo preferences: ${demo || 'not specified'}
+- Familiarity with Claude Code: ${familiarity}
+- Specific challenge: ${usecase || 'not specified'}
+
+Write exactly 2–3 sentences that:
+1. Acknowledge what they're most interested in (be specific, mention it directly)
+2. Tell them what part of the workshop will be most relevant for them
+3. Optionally reference their specific challenge if they shared one
+
+Tone: warm, direct, like a knowledgeable friend — not corporate. No fluff. Start with their interest, not their name.`;
+
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'x-api-key': CLAUDE_KEY,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-haiku-4-5-20251001',
+                max_tokens: 180,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const data = await res.json();
+        const brief = data.content?.[0]?.text?.trim() || '';
+        if (!brief) throw new Error('empty');
+
+        el.className = 'brief-text';
+        el.textContent = brief;
+
+    } catch {
+        el.className = 'brief-text';
+        el.style.color = 'var(--text-dim)';
+        el.textContent = "We'll tailor the session based on your answers — see you at the workshop!";
+    }
 }
 
 /* ── Lightweight confetti ── */
