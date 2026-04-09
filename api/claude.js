@@ -22,6 +22,6 @@ export default async function handler(req, res) {
         const data = await response.json();
         res.status(response.status).json(data);
     } catch (err) {
-        res.status(500).json({ error: 'Upstream request failed' });
+        res.status(500).json({ error: 'Upstream request failed', detail: err.message });
     }
 }
