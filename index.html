@@ -956,10 +956,20 @@ async function getInspiration() {
     const interests = Array.isArray(answers.interests) ? answers.interests.join(', ') : (answers.interests || '');
     const demo      = Array.isArray(answers.demo)      ? answers.demo.join(', ')      : (answers.demo      || '');
 
+    const teamContext = answers.team === 'ESP Team'
+        ? 'The ESP Team (Enterprise Solutions & Partnerships) handles company training and B2B partnerships — they work with corporate clients, design training programs, manage client relationships, and coordinate between businesses and RevoU\'s education offerings.'
+        : answers.team === 'Enrollment Team'
+        ? 'The Enrollment Team handles student acquisition, admissions, and onboarding — they manage leads, follow-ups, and the process of converting prospective students into enrolled participants.'
+        : answers.team === 'POFs/Finance Team'
+        ? 'The POFs/Finance Team manages payment, financing options, scholarships, and financial operations related to student fees and company revenue.'
+        : answers.team === 'LEEN Team'
+        ? 'The LEEN Team (Learning Experience & Education) focuses on curriculum design, learning quality, student success, and the overall educational experience.'
+        : '';
+
     const prompt = `You are helping ${answers.name || 'someone'}, who works on the ${team} at RevoU (an Indonesian online tech education company), fill in a pre-workshop survey for an internal Claude Code AI workshop.
 
 Their context:
-- Team: ${team}
+- Team: ${team}${teamContext ? `\n  Context: ${teamContext}` : ''}
 - Learning interests: ${interests || 'not specified'}
 - Demo preferences: ${demo || 'not specified'}
 
@@ -1142,10 +1152,20 @@ async function generateBrief() {
     const familiarity = answers.familiarity || 'some experience';
     const usecase     = answers.usecase     || '';
 
+    const teamContextBrief = answers.team === 'ESP Team'
+        ? 'The ESP Team (Enterprise Solutions & Partnerships) handles company training and B2B partnerships — they work with corporate clients, design training programs, manage client relationships, and coordinate between businesses and RevoU\'s education offerings.'
+        : answers.team === 'Enrollment Team'
+        ? 'The Enrollment Team handles student acquisition, admissions, and onboarding — they manage leads, follow-ups, and the process of converting prospective students into enrolled participants.'
+        : answers.team === 'POFs/Finance Team'
+        ? 'The POFs/Finance Team manages payment, financing options, scholarships, and financial operations related to student fees and company revenue.'
+        : answers.team === 'LEEN Team'
+        ? 'The LEEN Team (Learning Experience & Education) focuses on curriculum design, learning quality, student success, and the overall educational experience.'
+        : '';
+
     const prompt = `You are writing a short, warm, personalized "workshop brief" for ${answers.name || 'a participant'} who just filled out a pre-workshop survey for an internal Claude Code AI workshop at RevoU (Indonesian online tech education company).
 
 Their answers:
-- Team: ${team}
+- Team: ${team}${teamContextBrief ? `\n  Context: ${teamContextBrief}` : ''}
 - Learning interests: ${interests}
 - Demo preferences: ${demo || 'not specified'}
 - Familiarity with Claude Code: ${familiarity}
