@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Workshop — Pre-Survey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0a;
+            --card: rgba(255,255,255,0.04);
+            --card-hover: rgba(255,255,255,0.07);
+            --card-selected: rgba(254,222,62,0.08);
+            --border: rgba(255,255,255,0.08);
+            --border-selected: #fede3e;
+            --accent: #fede3e;
+            --accent-light: #ffe566;
+            --accent-glow: rgba(254,222,62,0.25);
+            --text: #f2f0f0;
+            --text-dim: rgba(242,240,240,0.5);
+            --text-faint: rgba(242,240,240,0.22);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+        body { background: var(--bg); color: var(--text); font-family: 'Red Hat Display', sans-serif; }
+
+        /* ── Background ── */
+        .bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        .bg::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 55% 50% at 5% 95%, rgba(254,222,62,0.07) 0%, transparent 55%),
+                radial-gradient(ellipse 45% 35% at 92% 8%, rgba(254,222,62,0.04) 0%, transparent 50%);
+            animation: bgDrift 12s ease-in-out infinite alternate;
+        }
+        @keyframes bgDrift {
+            from { opacity: 0.8; transform: scale(1); }
+            to   { opacity: 1;   transform: scale(1.04) translateY(-8px); }
+        }
+        .bg::after {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        /* ── App shell ── */
+        .app { position: relative; z-index: 1; height: 100vh; display: flex; flex-direction: column; }
+
+        /* ── Top bar ── */
+        .top-bar {
+            padding: 22px 36px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-mark {
+            width: 36px; height: 36px; border-radius: 50%;
+            overflow: hidden; flex-shrink: 0;
+            box-shadow: 0 4px 18px rgba(254,222,62,0.28);
+        }
+        .logo-mark img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .logo-text {
+            font-size: 11px; font-weight: 600;
+            color: var(--text-dim); letter-spacing: 0.07em; text-transform: uppercase;
+        }
+
+        /* ── Dot-step progress ── */
+        .progress-wrap {
+            padding: 0 36px 4px; flex-shrink: 0;
+        }
+        .dot-steps {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .dot-step {
+            position: relative; height: 4px; border-radius: 4px;
+            background: rgba(255,255,255,0.08);
+            flex: 1;
+            cursor: pointer;
+            transition: background 0.35s ease;
+            overflow: hidden;
+        }
+        .dot-step::after {
+            content: '';
+            position: absolute; inset: 0; left: 0;
+            background: var(--accent);
+            border-radius: 4px;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.55s cubic-bezier(0.4,0,0.2,1);
+        }
+        .dot-step.done::after  { transform: scaleX(1); }
+        .dot-step.active::after { transform: scaleX(0.5); background: var(--accent); opacity: 0.6; }
+        .dot-step.done { background: rgba(254,222,62,0.15); }
+
+        /* ── Counter ── */
+        .question-counter {
+            font-size: 12px; font-weight: 600;
+            color: var(--text-faint); letter-spacing: 0.06em;
+        }
+        .question-counter .current { color: var(--accent); }
+
+        /* ── Content area ── */
+        .content-area {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 24px 36px 36px; overflow: hidden; position: relative;
+        }
+
+        /* ── Question panel ── */
+        .question-panel {
+            position: absolute; width: 100%; max-width: 700px;
+            display: flex; flex-direction: column; gap: 20px;
+            transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease;
+        }
+        .question-panel.active   { transform: translateX(0); opacity: 1; }
+        .question-panel.exit-left  { transform: translateX(-72px); opacity: 0; pointer-events: none; }
+        .question-panel.exit-right { transform: translateX(72px);  opacity: 0; pointer-events: none; }
+        .question-panel.enter-right { transform: translateX(72px);  opacity: 0; pointer-events: none; }
+        .question-panel.enter-left  { transform: translateX(-72px); opacity: 0; pointer-events: none; }
+
+        /* Stagger children */
+        .question-panel.active .q-tag    { animation: fadeUp 0.45s ease both 0.04s; }
+        .question-panel.active .q-title  { animation: fadeUp 0.45s ease both 0.09s; }
+        .question-panel.active .q-sub    { animation: fadeUp 0.45s ease both 0.12s; }
+        .question-panel.active .q-body   { animation: fadeUp 0.45s ease both 0.16s; }
+        .question-panel.active .q-nav    { animation: fadeUp 0.45s ease both 0.21s; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Watermark number ── */
+        .q-watermark {
+            position: absolute;
+            top: -20px; right: -10px;
+            font-size: clamp(120px, 18vw, 200px);
+            font-weight: 900;
+            color: var(--text);
+            opacity: 0.032;
+            letter-spacing: -0.06em;
+            line-height: 1;
+            pointer-events: none;
+            user-select: none;
+            transition: opacity 0.4s;
+        }
+
+        .q-tag {
+            font-size: 11px; font-weight: 700;
+            color: var(--accent); letter-spacing: 0.13em; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .q-tag::before {
+            content: '';
+            display: inline-block; width: 14px; height: 2px;
+            background: var(--accent); border-radius: 2px;
+        }
+        .q-title {
+            font-size: clamp(22px, 3.2vw, 30px); font-weight: 800;
+            line-height: 1.2; letter-spacing: -0.02em;
+        }
+        .q-sub {
+            font-size: 14px; color: var(--text-dim); font-weight: 400; margin-top: -8px;
+        }
+
+        /* ── Option cards ── */
+        .options-grid { display: grid; gap: 9px; }
+        .options-grid.two-col { grid-template-columns: 1fr 1fr; }
+
+        .option-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px 18px;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 14px;
+            transition: background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+            position: relative; overflow: hidden;
+            -webkit-user-select: none; user-select: none;
+        }
+        .option-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(120deg, rgba(254,222,62,0.05), transparent 70%);
+            opacity: 0; transition: opacity 0.18s;
+        }
+        .option-card:hover {
+            background: var(--card-hover);
+            border-color: rgba(254,222,62,0.2);
+            transform: translateY(-1px);
+        }
+        .option-card:hover::before { opacity: 1; }
+
+        .option-card.selected {
+            background: var(--card-selected);
+            border-color: var(--border-selected);
+            box-shadow: 0 0 0 1px rgba(254,222,62,0.12), 0 4px 20px rgba(254,222,62,0.08);
+            animation: cardPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .option-card.selected::before { opacity: 1; }
+
+        /* Card pop bounce on selection */
+        @keyframes cardPop {
+            0%   { transform: scale(1); }
+            45%  { transform: scale(1.025); }
+            100% { transform: scale(1); }
+        }
+
+        /* Ripple */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(254,222,62,0.18);
+            transform: scale(0);
+            animation: rippleOut 0.55s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes rippleOut {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        .opt-indicator {
+            width: 20px; height: 20px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            transition: all 0.18s;
+        }
+        .option-card.radio   .opt-indicator { border-radius: 50%; }
+        .option-card.checkbox .opt-indicator { border-radius: 5px; }
+        .option-card.selected .opt-indicator {
+            background: var(--accent); border-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .opt-indicator svg {
+            width: 10px; height: 10px;
+            opacity: 0; transform: scale(0.4);
+            transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+        }
+        .option-card.selected .opt-indicator svg { opacity: 1; transform: scale(1); }
+        .opt-label { font-size: 14px; font-weight: 600; flex: 1; transition: color 0.18s; }
+
+        /* Keyboard hint badge on card */
+        .opt-key {
+            font-size: 10px; font-weight: 700; color: var(--text-faint);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px; padding: 2px 6px;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.18s, border-color 0.18s;
+        }
+        .option-card.selected .opt-key { color: var(--accent); border-color: rgba(254,222,62,0.2); }
+
+        /* ── Scale cards ── */
+        .scale-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .scale-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 18px 10px;
+            cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; text-align: center;
+            transition: background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+            -webkit-user-select: none; user-select: none;
+            position: relative; overflow: hidden;
+        }
+        .scale-card:hover {
+            background: var(--card-hover);
+            border-color: rgba(254,222,62,0.2);
+            transform: translateY(-2px);
+        }
+        .scale-card.selected {
+            background: var(--card-selected); border-color: var(--border-selected);
+            box-shadow: 0 0 0 1px rgba(254,222,62,0.12), 0 4px 20px rgba(254,222,62,0.08);
+            animation: cardPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .scale-num {
+            font-size: 22px; font-weight: 900;
+            color: var(--text-faint); transition: color 0.18s;
+        }
+        .scale-card.selected .scale-num { color: var(--accent); }
+        .scale-lbl {
+            font-size: 10.5px; font-weight: 700;
+            color: var(--text-dim); line-height: 1.3; letter-spacing: 0.01em;
+        }
+
+        /* ── Textarea ── */
+        .text-input {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 18px 22px;
+            color: var(--text); font-family: 'Red Hat Display', sans-serif;
+            font-size: 14px; font-weight: 400; resize: none;
+            width: 100%; min-height: 130px; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            line-height: 1.65;
+        }
+        .text-input::placeholder { color: var(--text-faint); }
+        .text-input:focus {
+            border-color: rgba(254,222,62,0.4);
+            box-shadow: 0 0 0 3px rgba(254,222,62,0.05);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ── Nav ── */
+        .q-nav { display: flex; align-items: center; justify-content: space-between; }
+        .btn-back {
+            background: none; border: none; color: var(--text-dim);
+            font-family: 'Red Hat Display', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; transition: color 0.2s; letter-spacing: 0.03em;
+        }
+        .btn-back:hover { color: var(--text); }
+        .btn-back.invisible { visibility: hidden; }
+
+        .btn-next {
+            background: var(--accent); border: none; color: #000;
+            font-family: 'Red Hat Display', sans-serif;
+            font-size: 14px; font-weight: 800;
+            cursor: pointer; padding: 13px 30px; border-radius: 100px;
+            display: flex; align-items: center; gap: 8px;
+            letter-spacing: -0.01em; position: relative; overflow: hidden;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .btn-next::before {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(0,0,0,0.08); opacity: 0; transition: opacity 0.18s;
+        }
+        .btn-next:hover::before { opacity: 1; }
+        .btn-next:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(254,222,62,0.35); }
+        .btn-next:active { transform: translateY(0); }
+        .btn-next:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-next svg path { stroke: #000; }
+
+        .hint-text {
+            font-size: 11px; font-weight: 600;
+            color: var(--text-faint); letter-spacing: 0.05em;
+        }
+
+        /* ── Keyboard shortcut hint ── */
+        .kbd-hint {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 100px; padding: 8px 18px;
+            font-size: 11px; font-weight: 600; color: var(--text-faint);
+            letter-spacing: 0.04em;
+            z-index: 10; pointer-events: none;
+            opacity: 1; transition: opacity 0.5s;
+        }
+        .kbd-hint.hidden { opacity: 0; }
+        .kbd-hint kbd {
+            background: rgba(254,222,62,0.1);
+            border: 1px solid rgba(254,222,62,0.2);
+            border-radius: 4px; padding: 1px 6px;
+            color: var(--accent); font-family: 'Red Hat Display', sans-serif;
+            font-size: 10px; font-weight: 800;
+        }
+
+        /* ── Completion ── */
+        .completion {
+            position: absolute; width: 100%; max-width: 680px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 28px; text-align: center; padding: 0 16px;
+            animation: fadeUp 0.6s ease both;
+        }
+        .check-ring {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse-ring 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse-ring {
+            0%,100% { box-shadow: 0 0 0 0 rgba(254,222,62,0.4); }
+            50%      { box-shadow: 0 0 0 18px rgba(254,222,62,0); }
+        }
+        .done-title { font-size: clamp(28px, 4vw, 38px); font-weight: 900; letter-spacing: -0.03em; }
+        .done-sub {
+            font-size: 14px; color: var(--text-dim); max-width: 380px;
+            line-height: 1.65; font-weight: 400; margin-top: -12px;
+        }
+        .summary-grid { width: 100%; display: grid; gap: 9px; text-align: left; }
+        .summary-item {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 18px;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .sum-label {
+            font-size: 10px; font-weight: 800; color: var(--accent);
+            letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .sum-value { font-size: 13.5px; font-weight: 500; color: var(--text); line-height: 1.45; }
+
+        /* ── Confetti canvas ── */
+        #confetti-canvas {
+            position: fixed; inset: 0; z-index: 100;
+            pointer-events: none; width: 100%; height: 100%;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .top-bar, .progress-wrap, .content-area { padding-left: 20px; padding-right: 20px; }
+            .options-grid.two-col { grid-template-columns: 1fr; }
+            .scale-grid { grid-template-columns: repeat(3, 1fr); }
+            .opt-key { display: none; }
+            .kbd-hint { display: none; }
+            .q-watermark { font-size: 100px; }
+        }
+        @media (max-height: 600px) {
+            .top-bar { padding-top: 14px; padding-bottom: 14px; }
+            .content-area { padding-top: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<div class="app">
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-mark"><img src="Revou Logo.png" alt="RevoU"></div>
+            <span class="logo-text">Claude Code Workshop</span>
+        </div>
+        <div class="question-counter" id="counter">
+            <span class="current" id="cur-num">01</span> / 05
+        </div>
+    </div>
+
+    <div class="progress-wrap">
+        <div class="dot-steps" id="dot-steps"></div>
+    </div>
+
+    <div class="content-area" id="stage"></div>
+</div>
+
+<!-- Keyboard hint -->
+<div class="kbd-hint" id="kbd-hint">
+    <span><kbd>1–8</kbd> select</span>
+    <span><kbd>↵</kbd> continue</span>
+    <span><kbd>⌫</kbd> back</span>
+</div>
+
+<script>
+/* ── Supabase ── */
+const _supa = supabase.createClient(
+    'https://mojbdsayviuihhootyir.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vamJkc2F5dml1aWhob290eWlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0OTIxNDQsImV4cCI6MjA4ODA2ODE0NH0.18J9GxpTpoFHFP-XN1zhWqaAwK7cjF2UI3eUkBjY5HE'
+);
+
+async function submitToSupabase() {
+    const payload = {
+        team:        answers.team        || null,
+        interests:   answers.interests   || null,
+        demo:        answers.demo        || null,
+        familiarity: answers.familiarity || null,
+        usecase:     answers.usecase     || null
+    };
+    const { error } = await _supa.from('workshop_survey_responses').insert(payload);
+    if (error) console.error('Supabase insert error:', error);
+}
+
+const questions = [
+    {
+        id: 'team',
+        tag: 'Question 01',
+        title: 'Which team are you from?',
+        type: 'radio',
+        autoAdvance: true,
+        options: ['Enrollment Team','ESP Team','POFs/Finance Team','LEEN Team']
+    },
+    {
+        id: 'interests',
+        tag: 'Question 02',
+        title: "What are you most interested in learning?",
+        sub: 'Pick everything that excites you — no wrong answers.',
+        type: 'checkbox',
+        options: [
+            'Automating repetitive tasks',
+            'Data analysis and processing',
+            'Code generation and assistance',
+            'Document processing and analysis',
+            'API integrations',
+            'Customer support automation',
+            'Report generation',
+            'Other'
+        ]
+    },
+    {
+        id: 'demo',
+        tag: 'Question 03',
+        title: 'Which demo project would help you the most?',
+        sub: 'Select all that feel relevant to your day-to-day work.',
+        type: 'checkbox',
+        options: [
+            'Email automation workflow',
+            'Data extraction from documents',
+            'Spreadsheet analysis tool',
+            'Code debugging assistant',
+            'Report generator',
+            'Custom chatbot for team use',
+            'API integration example',
+            'Other'
+        ]
+    },
+    {
+        id: 'familiarity',
+        tag: 'Question 04',
+        title: 'How familiar are you with Claude Code right now?',
+        type: 'scale',
+        autoAdvance: true,
+        options: ['No experience','Beginner','Intermediate','Advanced','Very experienced']
+    },
+    {
+        id: 'usecase',
+        tag: 'Question 05',
+        title: "Any specific challenge you'd like to tackle?",
+        sub: "Optional, but the more context you share, the better we can tailor the session.",
+        type: 'text',
+        optional: true
+    }
+];
+
+let cur = 0;
+let kbdHintHidden = false;
+const answers = {};
+const stage   = document.getElementById('stage');
+const curNum  = document.getElementById('cur-num');
+const counter = document.getElementById('counter');
+const dotWrap = document.getElementById('dot-steps');
+const kbdHint = document.getElementById('kbd-hint');
+
+/* ── Dot-step progress ── */
+function buildDots() {
+    dotWrap.innerHTML = '';
+    questions.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'dot-step';
+        d.dataset.idx = i;
+        d.onclick = () => { if (i <= cur) go(i, i < cur ? 'back' : 'fwd'); };
+        dotWrap.appendChild(d);
+    });
+}
+
+function updateDots(idx) {
+    dotWrap.querySelectorAll('.dot-step').forEach((d, i) => {
+        d.classList.toggle('done',   i < idx);
+        d.classList.toggle('active', i === idx);
+    });
+}
+
+/* ── Render ── */
+function buildPanel(i) {
+    const q = questions[i];
+    const panel = document.createElement('div');
+    panel.className = 'question-panel';
+    panel.id = 'qp-' + i;
+
+    let bodyHTML = '';
+
+    if (q.type === 'radio' || q.type === 'checkbox') {
+        const twoCol = q.options.length >= 6;
+        const icon = q.type === 'radio'
+            ? '<circle cx="5" cy="5" r="2.8" fill="#000"/>'
+            : '<polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        bodyHTML = `<div class="options-grid q-body${twoCol ? ' two-col' : ''}">
+            ${q.options.map((opt, oi) => {
+                const sel = Array.isArray(answers[q.id])
+                    ? answers[q.id].includes(opt)
+                    : answers[q.id] === opt;
+                return `<div class="option-card ${q.type}${sel ? ' selected' : ''}"
+                             data-val="${escHtml(opt)}"
+                             onclick="pick(event,${i},'${escJs(opt)}','${q.type}')">
+                    <div class="opt-indicator">
+                        <svg viewBox="0 0 10 10" fill="none">${icon}</svg>
+                    </div>
+                    <span class="opt-label">${escHtml(opt)}</span>
+                    <span class="opt-key">${oi + 1}</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+    } else if (q.type === 'scale') {
+        bodyHTML = `<div class="scale-grid q-body">
+            ${q.options.map((opt, idx) => {
+                const sel = answers[q.id] === opt;
+                return `<div class="scale-card${sel ? ' selected' : ''}" onclick="pickScale(event,${i},'${escJs(opt)}')">
+                    <div class="scale-num">${String(idx+1).padStart(2,'0')}</div>
+                    <div class="scale-lbl">${escHtml(opt)}</div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    } else {
+        bodyHTML = `<div class="q-body">
+            <textarea class="text-input" id="ta-${i}"
+                placeholder="Share any specific workflows or tasks you'd like to automate or improve…"
+                oninput="answers['${q.id}']=this.value">${answers[q.id] || ''}</textarea>
+        </div>`;
+    }
+
+    const needsNext = q.type === 'checkbox' || q.type === 'text';
+    const isLast    = i === questions.length - 1;
+    const navHTML   = needsNext
+        ? `<div class="q-nav">
+            <button class="btn-back${i === 0 ? ' invisible' : ''}" onclick="goBack()">← back</button>
+            <div style="display:flex;align-items:center;gap:14px">
+                ${q.optional ? '<span class="hint-text">optional</span>' : ''}
+                <button class="btn-next" onclick="goNext()">
+                    ${isLast ? 'Submit Survey' : 'Continue'}
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 7h8M8 4l3 3-3 3" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+          </div>`
+        : `<div class="q-nav">
+            <button class="btn-back${i === 0 ? ' invisible' : ''}" onclick="goBack()">← back</button>
+            <span class="hint-text">tap a card to select</span>
+           </div>`;
+
+    // Build watermark number from tag e.g. "Question 01" → "01"
+    const wNum = q.tag.split(' ')[1] || String(i+1).padStart(2,'0');
+
+    panel.innerHTML = `
+        <div class="q-watermark" aria-hidden="true">${wNum}</div>
+        <div class="q-tag">${q.tag}</div>
+        <div class="q-title">${escHtml(q.title)}</div>
+        ${q.sub ? `<div class="q-sub">${escHtml(q.sub)}</div>` : ''}
+        ${bodyHTML}
+        ${navHTML}
+    `;
+    return panel;
+}
+
+/* ── Ripple helper ── */
+function spawnRipple(e, el) {
+    const rect = el.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = (e.clientX || rect.left + rect.width / 2) - rect.left - size / 2;
+    const y = (e.clientY || rect.top  + rect.height / 2) - rect.top  - size / 2;
+    const rip = document.createElement('span');
+    rip.className = 'ripple';
+    rip.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+    el.appendChild(rip);
+    rip.addEventListener('animationend', () => rip.remove());
+}
+
+/* ── Transition ── */
+function go(newIdx, dir) {
+    const old = stage.querySelector('.question-panel.active');
+    if (old) {
+        old.classList.remove('active');
+        old.classList.add(dir === 'fwd' ? 'exit-left' : 'exit-right');
+        setTimeout(() => old.remove(), 520);
+    }
+    cur = newIdx;
+    curNum.textContent = String(cur + 1).padStart(2, '0');
+    updateDots(cur);
+
+    const panel = buildPanel(newIdx);
+    stage.appendChild(panel);
+    panel.getBoundingClientRect();
+    panel.classList.add(dir === 'fwd' ? 'enter-right' : 'enter-left');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        panel.classList.remove('enter-right', 'enter-left');
+        panel.classList.add('active');
+    }));
+}
+
+/* ── Interactions ── */
+function hideKbdHint() {
+    if (!kbdHintHidden) {
+        kbdHintHidden = true;
+        kbdHint.classList.add('hidden');
+    }
+}
+
+function pick(e, qIdx, val, type) {
+    spawnRipple(e, e.currentTarget);
+    hideKbdHint();
+    const q = questions[qIdx];
+    if (type === 'radio') {
+        answers[q.id] = val;
+        document.querySelectorAll(`#qp-${qIdx} .option-card.radio`).forEach(c => {
+            c.classList.toggle('selected', c.dataset.val === val);
+        });
+        setTimeout(() => goNext(), 370);
+    } else {
+        if (!answers[q.id]) answers[q.id] = [];
+        const arr = answers[q.id];
+        const pos = arr.indexOf(val);
+        pos === -1 ? arr.push(val) : arr.splice(pos, 1);
+        document.querySelectorAll(`#qp-${qIdx} .option-card.checkbox`).forEach(c => {
+            c.classList.toggle('selected', arr.includes(c.dataset.val));
+        });
+    }
+}
+
+function pickScale(e, qIdx, val) {
+    spawnRipple(e, e.currentTarget);
+    hideKbdHint();
+    const q = questions[qIdx];
+    answers[q.id] = val;
+    document.querySelectorAll(`#qp-${qIdx} .scale-card`).forEach(c => {
+        c.classList.toggle('selected', c.querySelector('.scale-lbl').textContent === val);
+    });
+    setTimeout(() => goNext(), 370);
+}
+
+function goNext() {
+    if (cur < questions.length - 1) {
+        go(cur + 1, 'fwd');
+    } else {
+        showDone();
+    }
+}
+
+function goBack() {
+    if (cur > 0) go(cur - 1, 'back');
+}
+
+/* ── Keyboard shortcuts ── */
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'TEXTAREA') return;
+
+    const q = questions[cur];
+    if (!q) return;
+
+    // Number keys for selecting options
+    const num = parseInt(e.key);
+    if (!isNaN(num) && num >= 1) {
+        hideKbdHint();
+        if (q.type === 'radio' || q.type === 'checkbox') {
+            const cards = document.querySelectorAll(`#qp-${cur} .option-card`);
+            if (cards[num - 1]) cards[num - 1].click();
+        } else if (q.type === 'scale') {
+            const cards = document.querySelectorAll(`#qp-${cur} .scale-card`);
+            if (cards[num - 1]) cards[num - 1].click();
+        }
+        return;
+    }
+
+    if (e.key === 'Enter') { e.preventDefault(); goNext(); }
+    if (e.key === 'Backspace') { e.preventDefault(); goBack(); }
+    if (e.key === 'ArrowRight') goNext();
+    if (e.key === 'ArrowLeft')  goBack();
+});
+
+/* ── Completion ── */
+function showDone() {
+    const old = stage.querySelector('.question-panel.active');
+    if (old) {
+        old.classList.remove('active');
+        old.classList.add('exit-left');
+        setTimeout(() => old.remove(), 520);
+    }
+
+    // Mark all dots done
+    dotWrap.querySelectorAll('.dot-step').forEach(d => {
+        d.classList.add('done'); d.classList.remove('active');
+    });
+    counter.innerHTML = '<span style="color:var(--accent)">Done</span> ✓';
+    kbdHint.classList.add('hidden');
+
+    const labelMap = {
+        team: 'Your team',
+        interests: 'Interested in',
+        demo: 'Demo preference',
+        familiarity: 'Familiarity level',
+        usecase: 'Use case / challenge'
+    };
+
+    const summaryRows = questions
+        .filter(q => answers[q.id] && (Array.isArray(answers[q.id]) ? answers[q.id].length : answers[q.id]))
+        .map(q => {
+            const v = Array.isArray(answers[q.id]) ? answers[q.id].join(', ') : answers[q.id];
+            return `<div class="summary-item">
+                <div class="sum-label">${labelMap[q.id] || q.id}</div>
+                <div class="sum-value">${escHtml(v)}</div>
+            </div>`;
+        }).join('');
+
+    const done = document.createElement('div');
+    done.className = 'completion';
+    done.innerHTML = `
+        <div class="check-ring">
+            <svg width="30" height="30" viewBox="0 0 28 28" fill="none">
+                <polyline points="6,14 11,20 22,8" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div>
+            <div class="done-title">You're all set.</div>
+        </div>
+        <div class="done-sub">
+            Thanks for sharing — we'll use your answers to make the workshop as relevant as possible for your team.
+        </div>
+        ${summaryRows ? `<div class="summary-grid">${summaryRows}</div>` : ''}
+    `;
+    stage.appendChild(done);
+
+    // Submit to Supabase
+    submitToSupabase();
+
+    // 🎉 Confetti burst
+    setTimeout(() => launchConfetti(), 400);
+}
+
+/* ── Lightweight confetti ── */
+function launchConfetti() {
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#fede3e','#ffe566','#ffffff','#000000','#fcb031','#fef5bc'];
+    const particles = [];
+    const count = 120;
+
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+            y: canvas.height * 0.45,
+            vx: (Math.random() - 0.5) * 14,
+            vy: -(Math.random() * 10 + 6),
+            w: Math.random() * 10 + 4,
+            h: Math.random() * 5 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * Math.PI * 2,
+            rotV: (Math.random() - 0.5) * 0.25,
+            gravity: 0.28,
+            decay: 0.992,
+            alpha: 1
+        });
+    }
+
+    let frame;
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        for (const p of particles) {
+            if (p.alpha < 0.01) continue;
+            alive = true;
+            p.vy  += p.gravity;
+            p.vx  *= p.decay;
+            p.x   += p.vx;
+            p.y   += p.vy;
+            p.rot += p.rotV;
+            p.alpha *= 0.985;
+
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        }
+        if (alive) frame = requestAnimationFrame(draw);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    draw();
+    setTimeout(() => { cancelAnimationFrame(frame); ctx.clearRect(0, 0, canvas.width, canvas.height); }, 4000);
+}
+
+/* ── Helpers ── */
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(s) {
+    return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+/* ── Init ── */
+buildDots();
+updateDots(0);
+const first = buildPanel(0);
+first.classList.add('active');
+stage.appendChild(first);
+
+// Auto-hide kbd hint after 8s
+setTimeout(() => { if (!kbdHintHidden) kbdHint.classList.add('hidden'); }, 8000);
+</script>
+</body>
+</html>
