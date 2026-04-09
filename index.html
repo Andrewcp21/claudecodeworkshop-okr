@@ -940,8 +940,7 @@ function pickScale(e, qIdx, val) {
     setTimeout(() => goNext(), 370);
 }
 
-/* ── ✦ AI inspiration (Claude API) ── */
-const CLAUDE_KEY = '__CLAUDE_KEY__';
+/* ── ✦ AI inspiration (Claude API via /api/claude) ── */
 
 async function getInspiration() {
     const btn   = document.getElementById('inspo-btn');
@@ -969,14 +968,9 @@ Suggest exactly 3 specific, practical work challenges they could tackle with Cla
 Respond with ONLY a valid JSON array of 3 strings. No markdown, no explanation.`;
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/api/claude', {
             method: 'POST',
-            headers: {
-                'x-api-key': CLAUDE_KEY,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
                 model: 'claude-haiku-4-5-20251001',
                 max_tokens: 256,
@@ -1164,14 +1158,9 @@ Write exactly 2–3 sentences that:
 Tone: warm, direct, like a knowledgeable friend — not corporate. No fluff. Start with their interest, not their name.`;
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/api/claude', {
             method: 'POST',
-            headers: {
-                'x-api-key': CLAUDE_KEY,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-                'anthropic-dangerous-direct-browser-access': 'true'
-            },
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
                 model: 'claude-haiku-4-5-20251001',
                 max_tokens: 180,

@@ -1,4 +1,3 @@
 {
-  "buildCommand": "sed -i 's/__CLAUDE_KEY__/$CLAUDE_KEY/g' index.html",
   "outputDirectory": "."
 }
